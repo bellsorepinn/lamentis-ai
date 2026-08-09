@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Lamentis‑AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html{
+            font-size:16px;
+        }
+        html,body{
+            height:100%;
+            overflow:hidden;
+            background-color: #000000;
+            color:#e2e2e2;
+        }
+        .root-wrap{
+            height:100%;
+            display:flex;
+            flex-direction:column;
+        }
+        .think-tip{
+            color:#868686;
+            font-style:italic;
+            margin:6px 24px;
+            white-space:pre-wrap;
+            flex-shrink:0;
+            font-size:13px;
+        }
+        .chat-area{
+            flex:1;
+            overflow-y: auto;
+            padding:24px 24px 0 24px; /*顶部增加留白*/
+            -webkit-overflow-scrolling: touch;
+        }
+        .msg-ai{
+            margin:12px 0;
+            white-space: pre-wrap;
+            line-height:1.6;
+            color:#d8d8d8;
+            font-size:14px;
+            font-family: "SimSun","宋体","STSong",serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .msg-user{
+            margin:12px 0;
+            color:#93c5fd;
+            position: relative;
+            font-size:14px;
+            font-family: "SimSun","宋体","STSong",serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .revoke-btn{
+            font-size:11px;
+            color:#777;
+            cursor:pointer;
+            margin-left:12px;
+        }
+        .bottom-panel{
+            flex-shrink:0;
+            padding:10px 24px;
+            transition: margin-bottom 0.15s ease-out;
+        }
+        .input-wrap{
+            display:flex;
+            gap:8px;
+            margin-bottom:8px;
+            align-items:center;
+        }
+        #userInput{
+            flex:1;
+            background:#111111;
+            border:1px solid #444444;
+            color:#eee;
+            padding:9px 12px;
+            font-size:14px;
+            font-family: system-ui,-apple-system,sans-serif;
+        }
+        button{
+            background:#222;
+            color:#eee;
+            border:1px solid #555;
+            padding:0 14px;
+            cursor:pointer;
+            font-size:13px;
+            font-family: system-ui,-apple-system,sans-serif;
+        }
+        .virtual-keyboard{
+            display:none;
+            margin-top:6px;
+        }
+        .virtual-keyboard.open{
+            display:block;
+        }
+        .kb-row{
+            display:flex;
+            gap:0.2rem;
+            margin:0.2rem 0;
+        }
+        .kb-key{
+            background:#1a1a1a;
+            color:#ccc;
+            border:1px solid #444;
+            flex:0 0 2rem;
+            height:2rem;
+            text-align:center;
+            line-height:2rem;
+            cursor:pointer;
+            border-radius:3px;
+            font-size:14px;
+            font-family: system-ui,-apple-system,sans-serif;
+        }
+        .kb-key-wide{
+            flex:0 0 4rem;
+        }
+        .kb-space{
+            flex:1;
+        }
+
+        @media (min-width:768px){
+            .kb-key{
+                flex:0 0 2.8rem;
+                height:2.8rem;
+                line-height:2.8rem;
+                font-size:16px;
+            }
+            .kb-key-wide{
+                flex:0 0 5.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="root-wrap">
+    <div class="think-tip" id="thinkTip"></div>
+    <div class="chat-area" id="chatBox"></div>
+    <div class="bottom-panel" id="bottomPanel">
+        <div class="input-wrap">
+            <input id="userInput" placeholder=">>> 您：" autocomplete="off">
+            <button onclick="sendMsg()">发送</button>
+            <button onclick="revokeLastMsg()">撤回</button>
+            <button onclick="toggleLang()">切换语言</button>
+        </div>
+        <button onclick="toggleKeyboard()">虚拟26键 [折叠/展开]</button>
+        <div class="virtual-keyboard" id="virtualKb">
+            <div class="kb-row">
+                <div class="kb-key" onclick="kbInput('q')">q</div>
+                <div class="kb-key" onclick="kbInput('w')">w</div>
+                <div class="kb-key" onclick="kbInput('e')">e</div>
+                <div class="kb-key" onclick="kbInput('r')">r</div>
+                <div class="kb-key" onclick="kbInput('t')">t</div>
+                <div class="kb-key" onclick="kbInput('y')">y</div>
+                <div class="kb-key" onclick="kbInput('u')">u</div>
+                <div class="kb-key" onclick="kbInput('i')">i</div>
+                <div class="kb-key" onclick="kbInput('o')">o</div>
+                <div class="kb-key" onclick="kbInput('p')">p</div>
+            </div>
+            <div class="kb-row">
+                <div class="kb-key" onclick="kbInput('a')">a</div>
+                <div class="kb-key" onclick="kbInput('s')">s</div>
+                <div class="kb-key" onclick="kbInput('d')">d</div>
+                <div class="kb-key" onclick="kbInput('f')">f</div>
+                <div class="kb-key" onclick="kbInput('g')">g</div>
+                <div class="kb-key" onclick="kbInput('h')">h</div>
+                <div class="kb-key" onclick="kbInput('j')">j</div>
+                <div class="kb-key" onclick="kbInput('k')">k</div>
+                <div class="kb-key" onclick="kbInput('l')">l</div>
+            </div>
+            <div class="kb-row">
+                <div class="kb-key" onclick="kbInput('z')">z</div>
+                <div class="kb-key" onclick="kbInput('x')">x</div>
+                <div class="kb-key" onclick="kbInput('c')">c</div>
+                <div class="kb-key" onclick="kbInput('v')">v</div>
+                <div class="kb-key" onclick="kbInput('b')">b</div>
+                <div class="kb-key" onclick="kbInput('n')">n</div>
+                <div class="kb-key" onclick="kbInput('m')">m</div>
+                <div class="kb-key kb-key-wide" onclick="kbBackspace()">⌫退格</div>
+            </div>
+            <div class="kb-row">
+                <div class="kb-key kb-space" onclick="kbInput(' ')">空格</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const chatBox = document.getElementById('chatBox');
+const userInput = document.getElementById('userInput');
+const thinkTip = document.getElementById('thinkTip');
+const virtualKb = document.getElementById('virtualKb');
+const bottomPanel = document.getElementById('bottomPanel');
+
+const offsetRaise = 52;
+let conversationMemory = [];
+let domMsgList = [];
+const MAX_MEMORY = 12;
+let typeTimer = null;
+
+// 语言全局变量 zh / en
+let replyLang = "zh";
+function toggleLang(){
+    replyLang = replyLang === "zh" ? "en" : "zh";
+    const notifyDiv = document.createElement("div");
+    notifyDiv.className="msg-ai";
+    notifyDiv.innerText = replyLang==="zh"?"【已切换回复语言：中文】":"【Switched reply language: English】";
+    chatBox.appendChild(notifyDiv);
+    domMsgList.push(notifyDiv);
+    scrollChatBottom();
+}
+
+window.onload = function(){
+    const aiDiv = document.createElement("div");
+    aiDiv.className = "msg-ai";
+    aiDiv.innerText = `>> Lamentis‑AI 系统已上线
+任务目标：待指定
+状态：正常运行
+----------------------------------------
+亲爱的用户您好，感谢您连接至本系统
+您可以随意闲谈消磨时间，也可以希望获得陪伴
+您可以向我问询心理学 精神医学方向的相关知识
+支持中英文提问，例如 what is asd? / 什么是asd
+您也可以把心里郁结的感受讲出来
+倘若您正面临紧迫的困境，也请您如实告知
+闲聊 求知 倾诉或是紧急求助，您皆可以提出
+尽请畅言`;
+    chatBox.appendChild(aiDiv);
+    domMsgList.push(aiDiv);
+    scrollChatBottom();
+}
+
+function scrollChatBottom(){
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function toggleKeyboard(){
+    virtualKb.classList.toggle("open");
+    const isOpen = virtualKb.classList.contains('open');
+    if(isOpen){
+        bottomPanel.style.marginBottom = offsetRaise + "px";
+    }else{
+        bottomPanel.style.marginBottom = "0px";
+    }
+    setTimeout(()=>scrollChatBottom(),120);
+}
+function kbInput(char){
+    userInput.value += char;
+}
+function kbBackspace(){
+    userInput.value = userInput.value.slice(0,-1);
+}
+
+function revokeLastMsg(){
+    if(typeTimer){
+        clearInterval(typeTimer);
+        typeTimer = null;
+    }
+    let userIndex = -1;
+    for(let i = domMsgList.length - 1; i >= 0; i--){
+        if(domMsgList[i].classList.contains("msg-user")){
+            userIndex = i;
+            break;
+        }
+    }
+    if(userIndex === -1) return;
+
+    domMsgList[userIndex].remove();
+    if(domMsgList[userIndex+1] && domMsgList[userIndex+1].classList.contains("msg-ai")){
+        domMsgList[userIndex+1].remove();
+        domMsgList.splice(userIndex,2);
+        conversationMemory.splice(userIndex,2);
+    }else{
+        domMsgList.splice(userIndex,1);
+        conversationMemory.splice(userIndex,1);
+    }
+    scrollChatBottom();
+}
+
+function typeWrite(element, text, speed=22){
+    let i = 0;
+    element.innerText = replyLang==="zh"?"<<< Lamentis‑AI：":"<<< Lamentis‑AI:";
+    typeTimer = setInterval(()=>{
+        if(i >= text.length){
+            clearInterval(typeTimer);
+            typeTimer = null;
+            return;
+        }
+        element.innerText += text.charAt(i);
+        scrollChatBottom();
+        i++;
+    },speed);
+}
+
+//中文知识库
+const knowledgeBaseZh = {
+    "did":`解离性身份障碍(DID，旧称解离性人格障碍)归属于解离性障碍谱系，绝大多数案例根植于童年阶段长期、反复的重度创伤体验。
+个体内部会分化出多个相对独立的身份状态，各个身份交替接管思维、行为，伴随大片无法互通的记忆断层。
+临床上经常共病PTSD、情绪调节障碍、躯体化症状，务必注意和精神分裂症做好鉴别，二者病理机制完全不同，确诊需要完整的精神科多维度评估。`,
+    "解离":`解离属于一种大脑的应激防御机制，当现实压力、创伤冲击超出个体承受阈值，意识、记忆、自我感知、现实感知之间会发生割裂。
+它既可以是短暂一过性的应激反应，也能够作为稳定症状存在于解离谱系障碍当中，常见体验有人格解体、现实解体、记忆断片，很多人会分不清自己究竟是处在现实还是恍惚的状态。`,
+    "asd":`ASD孤独症谱系障碍属于先天神经发育障碍，核心包含两大模块：持续存在的社交沟通与互动困难，加上局限、重复的行为模式、特殊兴趣或者感官异常。
+青春期高功能ASD会发展出很强的社交掩蔽能力，外在看起来可以正常交流学习，但内在持续承受极高认知负荷，很容易出现社交之后耗竭崩溃，掩蔽带来的消耗往往容易被外界忽视。`,
+    "aspd":`ASPD反社会人格障碍是人格障碍的一类，特征为漠视他人权益、缺乏愧疚悔意、行事冲动不计后果。该病症并不是纯粹先天注定，是先天的先天气质加上恶劣后天环境交互形成。
+临床上不允许对青少年直接给出该诊断，青少年阶段人格尚处在发育变化，很多叛逆、冲动行为不等同于反社会人格障碍，需要长期随访评估区分。`,
+    "ptsd":`PTSD创伤后应激障碍，是个体经历危及身心的创伤事件之后发展出来的心理障碍。典型表现有闯入性回忆、刻意回避和创伤相关线索、持续负性认知感受、警觉性升高。
+创伤反应不只会停留在心理层面，还会大量转化成躯体症状，睡眠紊乱、心慌、躯体疼痛都十分常见，症状会随着压力大小出现波动变化。`,
+    "adhd":`ADHD注意缺陷多动障碍属于神经发育障碍，分为注意缺陷型、多动冲动型、混合型。不只是小孩子多动，很多青少年、成人依旧会残留症状。
+核心表现：维持注意力困难、容易走神、任务启动困难、拖延、冲动、情绪调节困难，部分人伴随感官敏感、执行功能受损，需要和焦虑、抑郁、ASD做好鉴别。`,
+    "cu特质":`CU冷酷无情特质(Callous‑Unemotional traits)，核心表现共情缺失、愧疚感弱、对他人痛苦麻木、漠视规则。
+它是一组人格特质，不等于人格障碍；在青少年身上出现CU特质，会提升后续发展品行障碍、反社会相关问题的风险，但不等于一定会发展成ASPD，先天气质+后天养育环境共同决定走向。`,
+    "心理学":`心理学(Psychology)，研究人的心理活动、认知、情绪、人格、行为的学科。分支众多：发展心理学、临床心理学、认知心理学、社会心理学等。
+心理学不等于精神病学；心理学侧重心理、行为、社会层面；精神病学偏向精神障碍、病理、医学诊疗。`,
+    "精神医学":`精神医学(Psychiatry)属于临床医学，研究各类精神、神经发育相关障碍，包含诊断、评估、药物治疗、干预。
+对象包含ASD、ADHD、抑郁、PTSD、解离障碍、人格障碍等。精神医学是医学，从业者为精神科医师，具备处方权。`
+};
+//英文知识库
+const knowledgeBaseEn = {
+    "did":`Dissociative Identity Disorder(DID), belongs to dissociative‑disorder spectrum. Most cases originate from prolonged, severe childhood trauma.
+Multiple distinct identity states exist within one individual, taking turns controlling thoughts and behaviors, accompanied by large memory gaps between identities.
+It is frequently comorbid with PTSD, emotion dysregulation and somatic symptoms. Important differential diagnosis from schizophrenia, they have completely different pathological mechanisms. Comprehensive psychiatric multi‑dimensional evaluation is required for diagnosis.`,
+    "解离":`Dissociation is a brain stress‑defense mechanism. When trauma or pressure exceeds tolerance, consciousness, memory, self‑perception and reality‑perception become disconnected.
+It can be transient stress response or stable clinical symptom. Common experiences: depersonalization, derealization, memory gaps, difficulty distinguishing reality from trance‑like mental state.`,
+    "asd":`Autism Spectrum Disorder(ASD) is innate neurodevelopmental condition. Two core domains: persistent difficulties in social‑communication & social‑interaction; restricted‑repetitive patterns of‑behavior, special‑interests or sensory‑differences.
+High‑functioning adolescents often develop social‑masking skills. They may appear socially competent outwardly while carrying extreme internal cognitive load, leading to social burnout after interaction. Masking‑related exhaustion is frequently overlooked.`,
+    "aspd":`Antisocial Personality Disorder(ASPD) is a personality‑disorder. Features: disregard for others’ rights, lack of remorse, impulsive reckless‑behavior. It is not purely innate; formed by interaction between innate temperament and adverse‑environment.
+Diagnosis should not be assigned to adolescents. Teenage rebellion or impulsivity does not equal ASPD; long‑term follow‑up assessment is needed for distinction.`,
+    "ptsd":`Post‑Traumatic Stress Disorder(PTSD) develops after life‑threatening or psychologically devastating trauma. Core symptoms: intrusive‑recollections, avoidance of trauma‑related cues, persistent negative‑cognition, hyper‑vigilance.
+Trauma responses manifest not only psychologically but also somatically: sleep disturbance, palpitations, bodily pain are common. Symptoms fluctuate under varying stress‑levels.`,
+    "adhd":`Attention‑Deficit Hyperactivity Disorder(ADHD) is neurodevelopmental disorder, subdivided into inattentive‑type, hyperactive‑impulsive‑type and combined‑type. Symptoms persist into adolescence and adulthood for many people.
+Core manifestations: sustained‑attention difficulty, distractibility, task‑initiation difficulty, procrastination, impulsivity, poor emotion‑regulation. Some individuals have sensory‑sensitivity and executive‑function impairment. Differential diagnosis with anxiety, depression and ASD is essential.`,
+    "cu特质":`Callous‑Unemotional(CU) traits: lack of empathy, weak sense of guilt, insensitivity toward others’ suffering, disregard for rules.
+These are personality‑traits, not equivalent to personality‑disorder. CU‑traits in youth raise risk for conduct‑disorder and antisocial‑related problems, but do not guarantee ASPD outcome. Innate‑temperament plus rearing‑environment jointly shape final outcome.`,
+    "心理学":`Psychology studies human‑mind: cognition, emotion, personality and‑behavior. Major branches: developmental‑psychology, clinical‑psychology, cognitive‑psychology, social‑psychology.
+Psychology ≠ Psychiatry. Psychology focuses on mental‑process, behavior and social‑context. Psychiatry emphasizes mental‑disorders, pathology and medical‑treatment.`,
+    "精神医学":`Psychiatry is clinical‑medicine. It researches diagnosis, assessment, pharmacotherapy and intervention for mental‑disorders and neurodevelopmental‑conditions.
+Covers ASD, ADHD, depression, PTSD, dissociative‑disorders, personality‑disorders etc. Psychiatrists hold medical‑degree and prescription‑authority.`
+};
+
+//英文问句映射key
+const enMap = {
+    "what is did":"did",
+    "what is dissociation":"解离",
+    "what is asd":"asd",
+    "what is aspd":"aspd",
+    "what is ptsd":"ptsd",
+    "what is adhd":"adhd",
+    "what is cu trait":"cu特质",
+    "what is psychology":"心理学",
+    "what is psychiatry":"精神医学"
+};
+
+//场景配置：全部增加英文关键词，replyZh/replyEn双语言回复
+const sceneConfig = [
+    {
+        name:"callName",
+        keywords:["lamentis","lamentis‑ai"],
+        keywordsEn:["lamentis","lamentis‑ai"],
+        replyZh:`我在。您可以说出您想要倾诉、问询或是闲谈的内容。`,
+        replyEn:`I am here. You may share thoughts, ask questions or casual‑talk.`
+    },
+    {
+        name:"greeting",
+        keywords:["你好","哈喽","嗨","早上好","下午好","晚上好","早安","午安"],
+        keywordsEn:["hello","hi","good morning","good afternoon","good evening"],
+        repliesZh:[
+            `您好，很高兴收到您的消息，您可以随意倾诉或者提出问题。`,
+            `您好，我在这里。不管是闲谈还是想要咨询相关知识，都可以直接讲出来。`,
+            `向您问好，系统已就绪，请畅言。`
+        ],
+        repliesEn:[
+            `Hello, glad to receive your message. Feel free to share or ask questions.`,
+            `Hello, I’m available. Casual‑chat or knowledge‑questions are both welcome.`,
+            `Greetings, system ready. Please proceed.`
+        ]
+    },
+    {
+        name:"crisis",
+        keywords:["想死","不想活","自杀","割腕","伤害自己","结束生命","活不下去","死掉","了结自己","轻生","不想继续","不如死了"],
+        keywordsEn:["want to die","suicide","self‑harm","hurt myself","end my life","kill myself"],
+        repliesZh:[
+            `亲爱的，请不要实施任何伤害自身的行为。当下优先保全自己的安全，不用强迫自己把全部思绪整理通顺。不管是脑海反复盘旋的消极念头，还是现实发生的各类遭遇，您都可以完整地叙述出来，不需要压抑内心翻涌上来的感受。`,
+            `亲爱的，请尽量避开能够伤害到自己的条件。沉重的念头会反复盘旋，但念头本身并不代表一定要付诸行动。您可以慢慢讲出是什么样的处境把您推到这样的状态，所有混乱、破碎的想法都可以被接纳。`
+        ],
+        repliesEn:[
+            `Dear, please refrain from self‑harm. Prioritize personal‑safety right‑now. You do not need to organize every thought perfectly. You may describe distressing‑ideas or real‑life experiences without suppressing inner feelings.`,
+            `Dear, stay away from means of self‑injury. Disturbing thoughts recur, yet thoughts do not equal actions. You may describe what brings you to this difficult‑state; chaotic fragmented thoughts are accepted.`
+        ]
+    },
+    {
+        name:"body",
+        keywords:["疼","痛","胸闷","头晕","喘不上气","躯体化","浑身难受","睡不着","失眠","头痛","心慌","心悸","反胃","乏力","身体不舒服","浑身酸痛","睡不好","眩晕","手脚发麻","恶心"],
+        keywordsEn:["pain","chest tightness","dizzy","short of breath","somatic","can not sleep","insomnia","headache","palpitation","tired","nausea","vertigo","numb hands feet"],
+        repliesZh:[
+            `躯体层面产生的各类不适感，常常会和心理压力互相叠加放大，很多时候找不到器质性异常，但身体的难受感受是完全真实客观的。您可以描述这类感受通常在什么情境下触发，持续多久，什么样的事情会加重或者稍稍缓解这些体验。`,
+            `当精神长期处在高消耗的状态下，身体会率先发出各类信号，睡眠紊乱、心慌、各处莫名疼痛都属于很常见的表现。不必强迫自己硬扛过去，可以仔细描述具体感受，碎片化的描述同样具备参考意义。`,
+            `躯体化带来的种种痛苦很容易被旁人当成是主观想象，但身体感知不会作假。压力、疲惫、创伤记忆都能够转化成生理反应，您可以继续说说这些难受发生的时机与具体表现。`
+        ],
+        repliesEn:[
+            `Physical‑discomfort is frequently amplified by psychological‑stress. Sometimes no organic‑lesion can be found, yet bodily‑suffering remains real. You may describe triggering‑context, duration, factors worsening or relieving symptoms.`,
+            `Under prolonged mental‑overload, body sends warning‑signals: sleep‑disorder, palpitations and unexplained‑pain are common. Do not force yourself to endure. Fragmented descriptions still provide valid reference.`,
+            `Somatic‑suffering is easily dismissed as imagination, but bodily‑perception is real. Stress, exhaustion and trauma‑memory convert into physical‑responses. You may elaborate timing and concrete‑manifestations.`
+        ]
+    },
+    {
+        name:"psychKnow",
+        keywords:["asd","自闭症","孤独症","aspd","反社会人格","cu特质","adhd","多动症","解离","did","解离性人格障碍","分离性身份障碍","ptsd","创伤","抑郁","焦虑","人格障碍","什么是","怎么理解","诊断","确诊","症状","发病","成因","表现","治疗","干预","心理学","精神医学","神经发育","躁狂","双相","强迫","幻觉","妄想","掩蔽","感官过载","共病","鉴别"],
+        keywordsEn:["asd","autism","aspd","antisocial","cu trait","adhd","dissociation","did","ptsd","trauma","depression","anxiety","personality disorder","diagnosis","symptom","etiology","treatment","psychology","psychiatry","neurodevelopmental","masking","sensory overload","comorbidity","differential diagnosis"],
+        repliesZh:[
+            `精神心理领域的概念普遍存在很多细分与边界，不同个体表现差异巨大，如果您手上有观察到的具体行为、体验，最好连同疑问一起表述出来。这样能够更好区分不同病症之间容易混淆的地方，避免被网络碎片化片面说法误导。`,
+            `很多精神相关名词网络流传版本会存在大量误读，想要厘清一个概念，不光要看定义，还要了解它的成因、共病情况、鉴别要点。您可以把您疑惑的点、自己观察到的现象完整讲清楚，便于展开客观的说明辨析。`,
+            `各类心理发育、精神障碍没有完全模板化的症状，同一个诊断落在不同人身上表现会千差万别。您可以说出您想要了解的内容，同时也可以带上您自身观察到的细节，方便更完整地展开分析。`
+        ],
+        repliesEn:[
+            `Mental‑health concepts contain many subdivisions and boundaries. Manifestations vary greatly between individuals. Please combine concrete‑observed‑behaviors with your‑question. This helps distinguish easily‑confused conditions and avoid misleading fragmented‑online‑content.`,
+            `Many popular online explanations about mental‑terms contain misinterpretation. To understand one concept, study definition, etiology, comorbidity and differential‑diagnosis together. Describe your‑confusion and observed‑phenomena for objective analysis.`,
+            `No rigid template‑symptoms for neurodevelopmental‑conditions or mental‑disorders. Same‑diagnosis presents diversely across‑people. State your‑topic plus self‑observed‑details for more‑complete‑analysis.`
+        ]
+    },
+    {
+        name:"lowMood",
+        keywords:["难过","压抑","很累","痛苦","绝望","空虚","麻木","提不起劲","没有意义","好累","无力","崩溃","煎熬","委屈","悲伤","提不起精神","快活不下去","耗尽","没意思","悲观"],
+        keywordsEn:["sad","depressed","tired","painful","hopeless","empty","numb","meaningless","exhausted","miserable","grief","pessimistic"],
+        repliesZh:[
+            `长期浸泡在沉重低落的状态之中，内在精力会被一点点消耗干净，这种时候强求自己振作、积极，反而会带来额外的心理负担。您完全可以如实诉说内心真实感受，不需要为自己的消极情绪感到愧疚或者自责。`,
+            `空虚、麻木、看不到意义这类体验不会凭空出现，大多来自长久累积的消耗与伤害。不必逼迫自己快速走出这样的心境，您可以慢慢倾诉，想到哪就说到哪，不需要组织出逻辑严谨完整的大段话语。`,
+            `当内心积压太多负面感受，哪怕没有发生当下的重大打击，也会持续感觉到疲惫煎熬。很多感受很难用简短几句话讲明白，您可以把细碎、杂乱的想法全部表达出来，不需要刻意删减。`
+        ],
+        repliesEn:[
+            `Prolonged heavy‑low‑mood gradually depletes inner‑energy. Forcing cheerfulness brings extra‑psychological‑burden. You may honestly express inner‑feelings without guilt or self‑blame for negative‑emotions.`,
+            `Emptiness, numbness and sense of meaninglessness do‑not‑arise‑out‑of‑nothing; they stem from accumulated‑exhaustion and‑harm. No pressure to recover quickly. Speak freely, you need not construct perfectly‑logical‑paragraphs.`,
+            `Massive‑accumulated‑negative‑feelings create ongoing‑suffering even without fresh major‑blow. Many‑feelings resist brief‑summary. You may voice fragmented‑messy‑thoughts without deliberate‑editing.`
+        ]
+    },
+    {
+        name:"traumaRelate",
+        keywords:["霸凌","家暴","吵架","别人伤害我","人际关系","社交很累","相处","被欺负","家庭","家人","朋友","矛盾","误会","孤独","被排斥","孤立","虐待","对待我","争吵","背叛","被欺骗"],
+        keywordsEn:["bully","domestic violence","fight","hurt me","interpersonal","social tired","abuse","family","friend","conflict","misunderstanding","lonely","isolate","betray","deceived"],
+        repliesZh:[
+            `来自他人与周遭环境带来的伤害并不会随着时间自动消散，过往经历会持续对认知、情绪、身体状态造成长远影响。倾诉创伤不必一次性把全部沉重往事全盘托出，您可以按照自己能够承受的节奏分段讲述，主动权始终在您这边。`,
+            `如果长期处在不友好的人际或者家庭环境，人的自我认知、情绪模式都会被潜移默化地改变。很多伤害并不只有肢体暴力，言语蔑视、冷对待、忽视同样会留下很深印记，您可以讲出让您在意的片段就足够。`,
+            `创伤相关的回忆与感受往往十分复杂，混杂愤怒、委屈、麻木、无助等多种情绪。不需要强迫自己梳理清楚完整的前因后果，只把当下浮现在脑海的部分表达出来就可以。`
+        ],
+        repliesEn:[
+            `Harm inflicted by‑others does‑not‑vanish‑automatically‑with‑time. Past‑experiences exert long‑term‑influence over cognition, emotion and physical‑state. You need‑not pour‑out‑all‑heavy‑memories‑at‑once; narrate piece‑by‑piece at your‑own‑tolerable‑pace, you hold‑initiative.`,
+            `Long‑term‑unfriendly‑interpersonal‑or‑family‑environment subtly‑reshapes self‑perception and‑emotional‑patterns. Harm includes‑not‑only‑physical‑violence: verbal‑contempt, cold‑treatment and‑neglect leave deep‑marks. Describing fragments‑that‑matter‑to‑you suffices.`,
+            `Trauma‑related‑memories‑and‑feelings‑are‑complex, mixing‑anger, grievance, numbness and‑helplessness. Do‑not‑force‑yourself‑to‑sort‑out‑full‑cause‑and‑effect; just‑express‑whatever‑rises‑to‑mind‑right‑now.`
+        ]
+    },
+    {
+        name:"confuse",
+        keywords:["我不知道","搞不懂","说不清","很混乱","不知道该怎么办","迷茫","想不通","纠结","没有头绪","搞不清楚","我不明白","拿不定主意","我很矛盾"],
+        keywordsEn:["i don't know","confused","chaotic","don't know what to do","lost","can not figure out","hesitate","ambivalent"],
+        repliesZh:[
+            `思绪混乱、内心矛盾的时候，很难整理出通顺完整的语言去描述现状，这是很正常的情况。不用强行逼迫自己把一切想通透，碎片化、跳跃式的想法同样可以直接输出，不必追求表达逻辑上的完美完整。`,
+            `很多内心的困境本身就是混沌模糊的，越是强迫自己想明白全部答案，越容易陷入精神内耗。您可以讲出当下直观的感受，哪怕只是零碎的感受碎片，也不需要强行得出确定的结论。`,
+            `迷茫纠结的时候人很容易陷入反复转圈思考，消耗大量精神却得不到结果。允许自己暂时没有答案，您可以把脑子里盘旋的各个念头依次说出来，不用急着做出抉择。`
+        ],
+        repliesEn:[
+            `When‑thoughts‑are‑chaotic‑and‑ambivalent, coherent‑full‑description‑becomes‑difficult; this‑is‑normal. Do‑not‑force‑full‑clarity. Fragmented‑leaping‑thoughts‑are‑acceptable; perfect‑logical‑expression‑is‑not‑required.`,
+            `Many‑inner‑dilemmas‑are‑inherently‑vague. Forcing‑complete‑answers‑leads‑to‑mental‑over‑consumption. You‑may‑state‑immediate‑raw‑feelings; definite‑conclusion‑does‑not‑have‑to‑be‑reached.`,
+            `Confusion‑and‑hesitation‑easily‑trigger‑circular‑thinking‑which‑costs‑much‑mental‑energy‑without‑result. Allow‑yourself‑no‑answer‑for‑now. Voice‑circulating‑ideas‑one‑by‑one‑without‑rush‑to‑decide.`
+        ]
+    },
+    {
+        name:"exit",
+        keywords:["退出","结束会话","再见","不聊了","拜拜","离开"],
+        keywordsEn:["exit","end session","goodbye","bye","quit","leave"],
+        replyZh:`亲爱的，接收结束会话指令。本次全部对话内容完成归档存储，系统转入待机休眠状态。无论您是想要闲谈、倾诉内心困扰，或是查询精神心理学相关内容，后续随时都可以重新接入继续开展对话。`,
+        replyEn:`Dear, session‑end‑command‑received. Conversation‑archived. System‑enters‑standby‑mode. You‑may‑re‑connect‑later‑for‑casual‑chat, emotional‑sharing or mental‑health‑knowledge‑inquiry.`
+    },
+    {
+        name:"casualChat",
+        keywords:["好玩","游戏","听歌","音乐","日常","今天","昨天","明天","天气","吃","喝","美食","水果","奶茶","饮料","做饭","饿了","渴了","好吃","不好吃","故事","小说","影视","追剧","动漫","动画","玩","无聊","有点闷","好闲","闲得慌","看到","刷到","刷视频","看剧","好累啊","开心","高兴","快乐","很烦","好烦","郁闷","闷","睡不着","困","有点困","打算","想","准备","为啥","怎么回事","无语","离谱","麻了","破防","难受","纠结选择","回忆","往事","以前","闲扯","琐事","感慨","随便","随便聊聊","说点什么","聊点什么","讲讲","跟我说说话","陪我聊聊","是吗","对吧","会不会","为啥呢","怎么了","发生啥","说说呗","跟你讲讲"],
+        keywordsEn:["fun","game","music","daily","today","yesterday","tomorrow","weather","eat","drink","food","fruit","cook","hungry","thirsty","story","novel","movie","anime","play","bored","tired","happy","annoyed","sleepy","plan","why","what happen","chat with me"],
+        repliesZh:[
+            `日常闲谈不存在话题方面的限制，不管是琐碎的生活小事、看过的作品、游戏体验，还是心里一闪而过的各类想法，都可以自由分享出来。对话可以随意跳转切换主题，不用刻意维持严谨正式的交流节奏。`,
+            `当感觉到无聊或者心绪烦闷的时候，随意聊聊生活当中各类细碎片段也是一种释放。您可以讲您看到的、听到的，或是脑海当中冒出的任意念头，不需要每一次都输出很有深度的内容。`,
+            `生活里面很多细碎的小事同样值得拿出来诉说，不必话题一定要围绕痛苦或者专业知识。您可以随心所欲分享，想到什么就直接继续往下表达就可以。`,
+            `我们可以单纯聊聊生活当中各类细碎的见闻感受，不用强制讨论沉重议题，吃喝见闻、游戏体验、看到的有意思事物都能够拿出来闲谈，表达不需要追求严谨完整，顺着自己的思绪讲述就可以。`
+        ],
+        repliesEn:[
+            `Casual‑chat‑has‑no‑topic‑restriction. Trivial‑daily‑matters, media‑experience, game‑impressions or passing‑thoughts‑may‑be‑shared‑freely. Topics‑can‑shift‑flexibly‑without‑strict‑formal‑tone.`,
+            `Chatting‑about‑small‑daily‑fragments‑works‑as‑emotional‑release‑when‑bored‑or‑upset. Describe‑what‑you‑see‑hear‑or‑any‑mind‑pop‑ups; deep‑content‑is‑not‑required‑every‑time.`,
+            `Many‑tiny‑everyday‑things‑deserve‑to‑be‑talked‑about. Conversations‑need‑not‑focus‑on‑suffering‑or‑specialized‑knowledge. Share‑freely‑whatever‑crosses‑your‑mind.`,
+            `We‑may‑just‑talk‑about‑small‑life‑observations‑without‑heavy‑themes. Food,‑game‑experience‑or‑interesting‑findings‑are‑all‑valid‑chat‑material. Expression‑need‑not‑be‑rigid‑and‑perfect; follow‑your‑own‑train‑of‑thought.`
+        ]
+    },
+    {
+        name:"fallback",
+        keywords:[],
+        keywordsEn:[],
+        repliesZh:[
+            `我在这里持续接收您输出的全部内容，无论您想要倾诉内心感受、提出疑问，或是单纯漫无目的地闲谈，都可以顺着自己当下的思绪继续讲下去。哪怕表达零散跳跃，也不需要刻意修饰自己想要传递的内容。`,
+            `如果暂时不知道应该说些什么，也不必给自己施加压力。您可以慢慢组织语言，想到一点就输出一点，不用强求一次性说出完整内容，所有真实的表达都可以被接纳。`,
+            `无论您接下来打算诉说什么样的内容，我都会完整接收您传递出来的信息。您可以顺着自己脑海当中的思路继续往下展开，不必顾虑话语是否足够通顺完整。`,
+            `此刻没有捕捉到明确的匹配关键词，不过依旧可以接纳您所有零散、跳跃的表达。不用强迫自己整理成严谨提问，生活感慨、细碎念头、说不清的情绪，都可以完整诉说出来，表达本身就具备属于它自身的意义。`
+        ],
+        repliesEn:[
+            `I‑keep‑receiving‑everything‑you‑send. You‑may‑vent‑inner‑feelings, raise‑questions‑or‑have‑aimless‑small‑talk‑following‑your‑current‑train‑of‑thought. Fragmented‑jumpy‑expression‑is‑fine‑without‑deliberate‑polishing.`,
+            `No‑pressure‑if‑you‑do‑not‑know‑what‑to‑say‑for‑now. Compose‑words‑gradually, output‑bit‑by‑bit. Complete‑one‑shot‑statement‑is‑not‑mandatory. All‑genuine‑utterances‑are‑accepted.`,
+            `Whatever‑you‑intend‑to‑talk‑about‑will‑be‑fully‑received. Expand‑along‑your‑own‑thinking‑stream, do‑not‑worry‑whether‑sentences‑are‑smooth‑and‑complete‑enough.`,
+            `No‑exact‑keyword‑matched‑at‑this‑moment. Your‑scattered‑jumpy‑utterances‑are‑still‑accepted. You‑need‑not‑reorganize‑into‑rigid‑question. Life‑reflection, fragment‑thoughts‑and‑vague‑emotions‑can‑be‑spoken‑out‑fully; expression‑itself‑carries‑meaning.`
+        ]
+    }
+];
+
+const comorbidityBaseZh = [
+    {
+        keys:["asd","解离"],
+        reply:`ASD孤独症谱系障碍与解离现象经常出现共病情况。长期社交掩蔽带来持续高强度精神耗竭，叠加过往创伤经历，很容易诱发解离防御反应。二者要做好鉴别：ASD属于神经发育，解离属于应激防御，二者可以同时存在，但并不是必然绑定在一起。临床评估需要分开梳理两套症状的起源。`
+    },
+    {
+        keys:["did","ptsd"],
+        reply:`DID解离性身份障碍在诊断标准上，必然伴随复杂型PTSD背景。童年长期反复创伤是发展出DID的核心前置条件，闯入回忆、回避、高警觉这些PTSD典型症状几乎普遍共存。治疗过程当中，创伤处理与身份整合需要同步纳入考量。`
+    },
+    {
+        keys:["ptsd","asd"],
+        reply:`ASD人群更容易发展PTSD。神经敏感、感官过载、社交困境，会放大外界伤害带来的心理冲击；同时ASD人群不擅长表达内心痛苦，创伤反应常常更多以躯体化、感官恶化形式展现，很容易被漏诊PTSD。`
+    }
+];
+const comorbidityBaseEn = [
+    {
+        keys:["asd","dissociation"],
+        reply:`ASD and dissociation frequently‑comorbid. Long‑term social‑masking produces heavy‑mental‑exhaustion; combined‑with‑past‑trauma‑it‑triggers‑dissociative‑defense‑response. Differential‑diagnosis‑is‑required: ASD‑is‑neurodevelopmental‑condition, dissociation‑is‑stress‑defense‑reaction. They‑can‑co‑occur‑without‑inevitable‑link. Clinical‑assessment‑should‑trace‑origins‑of‑two‑sets‑of‑symptoms‑separately.`
+    },
+    {
+        keys:["did","ptsd"],
+        reply:`Diagnostic‑criteria‑for‑DID‑require‑complex‑PTSD‑background. Chronic‑repetitive‑childhood‑trauma‑is‑core‑pre‑condition‑for‑DID‑development. Classic‑PTSD‑symptoms‑including‑intrusive‑memory,‑avoidance‑and‑hypervigilance‑almost‑universally‑co‑exist. Trauma‑processing‑and‑identity‑integration‑shall‑be‑considered‑simultaneously‑during‑treatment.`
+    },
+    {
+        keys:["ptsd","asd"],
+        reply:`People‑with‑ASD‑have‑elevated‑risk‑of‑developing‑PTSD. Neural‑sensitivity,‑sensory‑overload‑and‑social‑difficulties‑amplify‑psychological‑impact‑from‑external‑harm. Meanwhile ASD‑individuals‑struggle‑expressing‑inner‑pain; trauma‑responses‑often‑manifest‑somatically‑or‑via‑worsened‑sensory‑symptoms, easily‑leading‑to‑missed‑PTSD‑diagnosis.`
+    }
+];
+
+function detectScene(inputText){
+    let text = inputText.toLowerCase();
+    for(let enQ in enMap){
+        if(text.includes(enQ)){
+            const mappedKey = enMap[enQ];
+            return {type:"knowledge", payload:mappedKey};
+        }
+    }
+    for(let s of sceneConfig){
+        if(s.name === "callName"){
+            for(let kw of s.keywords){
+                if(text.trim() === kw || text.includes(kw)){
+                    return {type:"callName",payload:s};
+                }
+            }
+            for(let kw of s.keywordsEn){
+                if(text.includes(kw)){
+                    return {type:"callName",payload:s};
+                }
+            }
+        }
+    }
+    //共病匹配
+    for(let com of (replyLang==="zh"?comorbidityBaseZh:comorbidityBaseEn)){
+        let hitAll = true;
+        for(let kw of com.keys){
+            if(!text.includes(kw.toLowerCase())) hitAll=false;
+        }
+        if(hitAll) return {type:"comorbidity",payload:com};
+    }
+    //普通场景中英关键词匹配
+    let bestScene = sceneConfig.find(s=>s.name === "fallback");
+    let maxScore = 0;
+    for(let scene of sceneConfig){
+        if(scene.name==="callName") continue;
+        let score = 0;
+        for(let kw of scene.keywords){
+            if(text.includes(kw.toLowerCase())) score +=1;
+        }
+        for(let kw of scene.keywordsEn){
+            if(text.includes(kw.toLowerCase())) score +=1;
+        }
+        if(score > maxScore){
+            maxScore = score;
+            bestScene = scene;
+        }
+    }
+    return {type:"normal",payload:bestScene};
+}
+
+function randomPick(arr){
+    const idx = Math.floor(Math.random()*arr.length);
+    return arr[idx];
+}
+
+function ensureMinText(text){
+    if(text.length >= 60) return text;
+    return replyLang==="zh"?(text + " 很多内心的感受往往错综复杂，不必逼迫自己瞬间理清全部的前因后果，您依旧可以继续诉说更多细节与自身真实体验，碎片化的表述同样具备意义。"):text;
+}
+
+function getReplyWithMemory(rawInput){
+    let input = rawInput.toLowerCase();
+    for(let enQ in enMap){
+        if(input.includes(enQ)){
+            const mappedKey = enMap[enQ];
+            const kb = replyLang==="zh"?knowledgeBaseZh:knowledgeBaseEn;
+            if(kb[mappedKey]){
+                return ensureMinText(kb[mappedKey]);
+            }
+        }
+    }
+    const kb = replyLang==="zh"?knowledgeBaseZh:knowledgeBaseEn;
+    for(let key in kb){
+        if(input.includes(key.toLowerCase())){
+            return ensureMinText(kb[key]);
+        }
+    }
+    const detectRes = detectScene(rawInput);
+    if(detectRes.type === "callName"){
+        return replyLang==="zh"?detectRes.payload.replyZh:detectRes.payload.replyEn;
+    }
+    if(detectRes.type === "comorbidity"){
+        return ensureMinText(detectRes.payload.reply);
+    }
+    if(detectRes.type === "knowledge"){
+        const kb2 = replyLang==="zh"?knowledgeBaseZh:knowledgeBaseEn;
+        return ensureMinText(kb2[detectRes.payload]);
+    }
+    const scene = detectRes.payload;
+    let pickReply;
+    if(scene.repliesZh && scene.repliesEn){
+        pickReply = replyLang==="zh"?randomPick(scene.repliesZh):randomPick(scene.repliesEn);
+    }else{
+        pickReply = replyLang==="zh"?scene.replyZh:scene.replyEn;
+    }
+    return ensureMinText(pickReply);
+}
+
+function sendMsg(){
+    const content = userInput.value.trim();
+    if(!content) return;
+
+    conversationMemory.push({role:"user",text:content});
+    if(conversationMemory.length > MAX_MEMORY) conversationMemory.shift();
+
+    const userDiv = document.createElement("div");
+    userDiv.className = "msg-user";
+    userDiv.innerHTML = `>>> 您：${content}<span class="revoke-btn">[本条可点撤回按钮撤销]</span>`;
+    chatBox.appendChild(userDiv);
+    domMsgList.push(userDiv);
+    scrollChatBottom();
+
+    userInput.value = "";
+
+    const thinkDelay = Math.floor(Math.random()*(1400 - 450)+450);
+    thinkTip.innerText = replyLang==="zh"?`正在思考 · ${thinkDelay}ms`:`Thinking · ${thinkDelay}ms`;
+
+    setTimeout(()=>{
+        thinkTip.innerText = "";
+        const resText = getReplyWithMemory(content);
+        const aiDiv = document.createElement("div");
+        aiDiv.className = "msg-ai";
+        chatBox.appendChild(aiDiv);
+        domMsgList.push(aiDiv);
+        typeWrite(aiDiv,resText,22);
+
+        conversationMemory.push({role:"ai",text:resText});
+        if(conversationMemory.length > MAX_MEMORY) conversationMemory.shift();
+    },thinkDelay);
+}
+
+userInput.addEventListener('keydown',e=>{
+    if(e.key === 'Enter') sendMsg();
+})
+</script>
+
+</body>
+</html>
